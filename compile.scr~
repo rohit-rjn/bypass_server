@@ -1,0 +1,6 @@
+#compile files for socket chat
+gcc server.c -pthread -o server
+gcc group1p1.c -pthread -o client1_1
+#gcc group1p2.c -pthread -o client1_2
+gcc group2p1.c -pthread -o client2_1
+gcc group2p2.c -pthread -o client2_2

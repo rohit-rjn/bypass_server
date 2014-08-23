@@ -1,0 +1,111 @@
+#include<stdio.h>
+#include<string.h>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
+#include<sys/wait.h>
+#include<pthread.h>
+#include<sys/poll.h>
+
+
+#define PORT "3854"
+#define BACKLOG 10
+
+struct information
+{
+int fd;
+char name[20];
+}info[100];
+int sfd,newsfd,nfds=0,ports[10];
+pthread_t runner_thread;
+int number_of_client=0;
+
+void runner(void *arg)
+{
+char *num=(char *)arg;
+int index=atoi(num);
+printf("port = %d\n",ports[index]);
+
+char number[20];			
+int l1=recv(newsfd,number,20,0);	
+number[l1]='\0';	
+printf("Port received %sNow connecting to group2 user %d\n",number,index);	
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+socklen_t sin_size2;
+int sfd2;
+struct sockaddr_in my_address2,their_address2;
+
+	if((sfd2=socket(PF_INET,SOCK_STREAM,0))>0)
+	{
+		their_address2.sin_port=htons(ports[index]);
+		their_address2.sin_family=AF_INET;
+		their_address2.sin_addr.s_addr=inet_addr("127.0.0.1");
+		memset(&(my_address2.sin_zero),'\0',8);
+	
+		sin_size2=sizeof(struct sockaddr);
+		if(connect(sfd2,(struct sockaddr *)&their_address2,sin_size2)>=0)
+		{
+			char name[20];
+			printf("Send Port ??\n");
+			gets(name);
+			send(sfd2,number,strlen(number),0);
+
+			//char number[20];
+			//printf("Enter Number here\n");
+			//gets(name);
+			//send(sfd,name,strlen(name),0);
+
+			//pthread_create(&read,NULL,(void *)&read_func,NULL);
+			//pthread_create(&write,NULL,(void *)&write_func,NULL);
+			printf("My job is over!!\n");
+		}
+	}else perror("socket");
+}
+
+int main()
+{
+	int i;
+	for(i=0;i<10;i++)
+	ports[i]=1234+i;
+
+	socklen_t sin_size;
+	struct sockaddr_in my_address,client_address;   
+	struct pollfd fds[100];
+	
+	if((sfd=socket(PF_INET,SOCK_STREAM,0))>0)
+	{
+		my_address.sin_family=AF_INET;
+		my_address.sin_port=htons(atoi(PORT));
+		//my_address.sin_addr.s_addr=inet_addr("172.0.0.1");
+		my_address.sin_addr.s_addr=INADDR_ANY;
+		memset(&(my_address.sin_zero),'\0',8);
+		if(bind(sfd,(struct sockaddr *)&my_address,sizeof(struct sockaddr))!=-1)
+		{
+			if(listen(sfd,BACKLOG)!=-1)
+			{
+					sin_size=sizeof(struct sockaddr);
+					while(1)
+					{
+						if((newsfd=accept(sfd,(struct sockaddr *)&client_address,&sin_size))>=0)
+						{
+							printf("request accepted by server Please Enter Your name\n");
+	
+							int l=recv(newsfd,info[number_of_client].name,20,0);	
+							info[number_of_client].name[l]='\0';	
+							printf("Hello %s\n",info[number_of_client].name);
+							info[number_of_client++].fd=newsfd;			
+							
+							char number[20];				
+							int l1=recv(newsfd,number,20,0);	
+							number[l1]='\0';	
+							printf("Connecting to user %s of group2\n",number);	
+							pthread_create(&runner_thread,NULL,(void *)&runner,(void *)number);		
+						}	
+					}
+			}else perror("listen");	
+		}else perror("bind");
+	}else perror("socket");	
+	
+	return 0;
+}
